@@ -1,0 +1,271 @@
+:root {
+    --bg-primary: #060a13;
+    --bg-card: #0d1424;
+    --bg-surface: #131d33;
+    --border-subtle: rgba(59, 130, 246, 0.16);
+    --blue-primary: #2563eb;
+    --cyan-accent: #38bdf8;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: #f8fafc;
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #060a13;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #131d33;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2563eb;
+}
+
+.aether-panel {
+    background: #0d1424;
+    border: 1px solid rgba(59, 130, 246, 0.16);
+    border-radius: 16px;
+}
+
+.aether-subpanel {
+    background: #131d33;
+    border: 1px solid rgba(59, 130, 246, 0.16);
+    border-radius: 12px;
+}
+
+.game-card {
+    background: linear-gradient(165deg, #131d33 0%, #0d1424 100%);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 18px;
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.game-card:hover {
+    transform: translateY(-4px);
+    border-color: #3b82f6;
+    box-shadow: 0 14px 32px -10px rgba(37, 99, 235, 0.35);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 6px 24px rgba(59, 130, 246, 0.45);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-cashout {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease;
+}
+
+.btn-cashout:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.btn-cashout:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-visitor-lock {
+    background: linear-gradient(135deg, #131d33 0%, #0d1424 100%);
+    border: 1px solid rgba(56, 189, 248, 0.38);
+    color: #38bdf8;
+    transition: all 0.2s ease;
+}
+
+.btn-visitor-lock:hover {
+    background: rgba(37, 99, 235, 0.18);
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+/* Mines 3D Flip */
+.mine-tile {
+    perspective: 700px;
+    aspect-ratio: 1 / 1;
+}
+
+.mine-tile-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-style: preserve-3d;
+}
+
+.mine-tile.revealed .mine-tile-inner {
+    transform: rotateY(180deg);
+}
+
+.mine-front,
+.mine-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mine-front {
+    background: linear-gradient(145deg, #16223b 0%, #0f182b 100%);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.mine-tile:not(.revealed):not(.disabled):hover .mine-front {
+    border-color: #38bdf8;
+    background: linear-gradient(145deg, #1c2b4a 0%, #131f38 100%);
+}
+
+.mine-back {
+    transform: rotateY(180deg);
+}
+
+/* Dice Range Slider */
+input[type="range"].aether-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 12px;
+    border-radius: 9999px;
+    outline: none;
+    cursor: pointer;
+}
+
+input[type="range"].aether-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: #2563eb;
+    border: 3px solid #f8fafc;
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.7);
+    cursor: grab;
+    transition: transform 0.15s ease;
+}
+
+input[type="range"].aether-slider::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+}
+
+input[type="range"].aether-slider::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: #2563eb;
+    border: 3px solid #f8fafc;
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.7);
+    cursor: grab;
+}
+
+@keyframes pulseFloor {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.35);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(56, 189, 248, 0);
+    }
+}
+
+.active-floor-glow {
+    animation: pulseFloor 2s infinite;
+}
+
+@keyframes shakeSoft {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-6px);
+    }
+
+    40% {
+        transform: translateX(6px);
+    }
+
+    60% {
+        transform: translateX(-4px);
+    }
+
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+.animate-shake {
+    animation: shakeSoft 0.35s ease-in-out;
+}
+
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.view-enter {
+    animation: fadeSlideUp 0.24s ease-out forwards;
+}
+
+.hero-banner {
+    background: radial-gradient(circle at 82% 24%, rgba(37, 99, 235, 0.26) 0%, rgba(56, 189, 248, 0.08) 40%, rgba(13, 20, 36, 0.96) 78%),
+        linear-gradient(135deg, #0b1326 0%, #070c18 100%);
+    border: 1px solid rgba(59, 130, 246, 0.24);
+}

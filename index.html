@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AETHER BET // Simulador Virtual</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            aether: {
+              bg: '#060a13',
+              card: '#0d1424',
+              surface: '#131d33',
+              blue: '#2563eb',
+              blueHover: '#1d4ed8',
+              cyan: '#38bdf8',
+              emerald: '#10b981',
+              red: '#ef4444',
+              text: '#f8fafc',
+              muted: '#94a3b8',
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="selection:bg-blue-600 selection:text-white">
+
+  <!-- Particle Celebration Overlay Canvas -->
+  <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- Bottom-Right Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- ==================== STICKY TOP HEADER ==================== -->
+  <header class="sticky top-0 z-40 bg-[#060a13]/92 backdrop-blur-md border-b border-blue-500/15">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <!-- Left: Mobile Menu Toggle + Brand Logo + Desktop Nav -->
+      <div class="flex items-center gap-4 lg:gap-8">
+        <button id="mobileMenuBtn" onclick="App.toggleMobileMenu()" aria-label="Abrir Menu" class="md:hidden p-2 rounded-xl bg-[#0d1424] border border-blue-500/20 text-slate-300 hover:text-white">
+          <svg id="mobileMenuIconOpen" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg id="mobileMenuIconClose" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <button onclick="App.navigateTo('home')" class="flex items-center gap-2.5 group focus:outline-none">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/30 group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+              <line x1="12" y1="22" x2="12" y2="15.5"></line>
+              <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+            </svg>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex items-baseline gap-1">
+              <span class="font-extrabold text-lg tracking-tight text-white">AETHER</span>
+              <span class="text-xs font-extrabold tracking-widest text-blue-400">BET</span>
+            </div>
+            <span class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 text-[10px] font-bold tracking-wider text-cyan-300 uppercase">
+              Simulador
+            </span>
+          </div>
+        </button>
+
+        <nav class="hidden md:flex items-center gap-1">
+          <button onclick="App.navigateTo('home')" data-nav="home" class="nav-link px-3.5 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-[#131d33] transition-colors">Início</button>
+          <button onclick="App.openGame(App.currentGame)" data-nav="games" class="nav-link px-3.5 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-[#131d33] transition-colors">Jogos</button>
+          <button onclick="App.navigateTo('wallet')" data-nav="wallet" class="nav-link px-3.5 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-[#131d33] transition-colors">Carteira</button>
+          <button onclick="App.navigateTo('account')" data-nav="account" class="nav-link px-3.5 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-[#131d33] transition-colors">Minha Conta</button>
+        </nav>
+      </div>
+
+      <!-- Right: Sound Toggle + Visitor Auth OR Logged-In Wallet/User -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Sound Effects Toggle -->
+        <button id="audioToggleBtn" onclick="SoundFX.toggle()" title="Alternar Efeitos Sonoros" class="p-2.5 rounded-xl bg-[#0d1424] border border-blue-500/20 text-slate-300 hover:text-white hover:border-blue-500/50 transition-colors">
+          <svg id="audioIconOn" class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg id="audioIconOff" class="w-4 h-4 text-slate-500 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <!-- VISITOR HEADER (ONLY Entrar & Criar Conta, NO Balance Badge) -->
+        <div id="headerGuestControls" class="flex items-center gap-2">
+          <button onclick="App.openAuthModal('login')" class="px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-200 hover:text-white bg-[#0d1424] border border-blue-500/25 hover:border-blue-500/60 transition-colors">
+            Entrar
+          </button>
+          <button onclick="App.openAuthModal('register')" class="btn-primary px-4 py-2 rounded-xl text-sm font-semibold">
+            Criar Conta
+          </button>
+        </div>
+
+        <!-- LOGGED-IN HEADER (Balance Pill + Quick Deposit + User Menu) -->
+        <div id="headerUserControls" class="hidden items-center gap-2 sm:gap-2.5">
+          <div class="flex items-center bg-[#0d1424] border border-blue-500/25 rounded-xl p-1 pl-3 gap-2.5">
+            <div class="flex flex-col">
+              <span class="text-[10px] uppercase tracking-wider text-slate-500 leading-none hidden sm:block">Saldo</span>
+              <span id="headerBalance" class="font-mono font-bold text-sm text-white tabular-nums">R$ 0,00</span>
+            </div>
+            <button onclick="App.openWallet('deposit')" class="btn-primary px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Depositar</span>
+            </button>
+          </div>
+
+          <!-- User Dropdown -->
+          <div class="relative">
+            <button id="userMenuBtn" onclick="App.toggleUserDropdown()" class="flex items-center gap-2 p-1.5 sm:pr-3 rounded-xl bg-[#0d1424] border border-blue-500/25 hover:border-blue-500/60 transition-colors">
+              <div id="headerAvatar" class="w-7 h-7 rounded-lg bg-blue-600/25 border border-blue-500/40 text-cyan-300 font-bold text-xs flex items-center justify-center">
+                AE
+              </div>
+              <span id="headerUsername" class="hidden sm:inline text-xs font-semibold text-slate-200 max-w-[100px] truncate">Usuário</span>
+              <svg class="hidden sm:block w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+
+            <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-48 aether-panel p-1.5 shadow-2xl shadow-black/80 z-50">
+              <button onclick="App.closeUserDropdown(); App.navigateTo('account')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-200 hover:bg-[#131d33] hover:text-white transition-colors">
+                <svg class="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Minha Conta</span>
+              </button>
+              <button onclick="App.closeUserDropdown(); App.navigateTo('wallet')" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-slate-200 hover:bg-[#131d33] hover:text-white transition-colors">
+                <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                <span>Carteira PIX</span>
+              </button>
+              <div class="my-1 border-t border-blue-500/15"></div>
+              <button onclick="App.closeUserDropdown(); App.logout()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span>Sair</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsible Mobile Navigation Drawer -->
+    <div id="mobileNavDrawer" class="hidden md:hidden bg-[#0d1424] border-b border-blue-500/20 px-4 py-3 space-y-1.5">
+      <button onclick="App.closeMobileMenu(); App.navigateTo('home')" class="w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-[#131d33]">Início</button>
+      <button onclick="App.closeMobileMenu(); App.openGame(App.currentGame)" class="w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-[#131d33]">Jogos Originais</button>
+      <button onclick="App.closeMobileMenu(); App.navigateTo('wallet')" class="w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-[#131d33]">Carteira</button>
+      <button onclick="App.closeMobileMenu(); App.navigateTo('account')" class="w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-[#131d33]">Minha Conta</button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN SPA VIEWPORT ==================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-14">
+
+    <!-- ==================== PAGE 1: INÍCIO (HOME) ==================== -->
+    <section id="view-home" class="view-enter space-y-8">
+      <!-- Hero Banner -->
+      <div class="hero-banner rounded-2xl p-6 sm:p-10 relative overflow-hidden">
+        <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-20 pointer-events-none hidden md:block">
+          <svg class="w-full h-full" viewBox="0 0 400 260" fill="none">
+            <circle cx="310" cy="115" r="135" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4 4"/>
+            <circle cx="310" cy="115" r="90" stroke="#38bdf8" stroke-width="1"/>
+            <polygon points="310,48 368,82 368,148 310,182 252,148 252,82" stroke="#2563eb" stroke-width="1.5" fill="rgba(37,99,235,0.08)"/>
+          </svg>
+        </div>
+
+        <div class="relative z-10 max-w-2xl space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-cyan-300 text-xs font-semibold">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span>Simulador de Apostas e Probabilidades</span>
+          </div>
+
+          <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            Experimente seis jogos originais com <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">dinâmica real e saldo simulado.</span>
+          </h1>
+
+          <p class="text-sm sm:text-base text-slate-400 max-w-xl leading-relaxed">
+            Crie sua conta gratuita em segundos para desbloquear apostas, gerenciar sua carteira PIX virtual e acompanhar seu desempenho em tempo real.
+          </p>
+
+          <div class="pt-2 flex flex-wrap items-center gap-3">
+            <button id="heroPrimaryCta" onclick="App.openAuthModal('register')" class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-2">
+              <span>Criar Conta Grátis</span>
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button onclick="document.getElementById('gamesGrid').scrollIntoView({behavior:'smooth'})" class="px-5 py-3 rounded-xl text-sm font-semibold text-slate-200 bg-[#131d33] border border-blue-500/25 hover:border-blue-500/60 hover:text-white transition-colors">
+              Explorar Jogos
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-Game Grid Cards -->
+      <div id="gamesGrid" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-1 h-5 rounded-full bg-blue-500"></div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">Jogos Originais</h2>
+          </div>
+          <span class="text-xs font-medium text-slate-400">6 modalidades disponíveis</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <!-- 1. Crash -->
+          <div onclick="App.openGame('crash')" class="game-card p-5 cursor-pointer group flex flex-col justify-between gap-5">
+            <div class="flex items-start justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 25L12 18L17 20L27 7" stroke="#38bdf8"/>
+                  <polyline points="20 7 27 7 27 14" stroke="#38bdf8"/>
+                  <line x1="4" y1="27" x2="28" y2="27" stroke="#2563eb" stroke-opacity="0.5"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#060a13] border border-blue-500/20 font-mono text-xs font-semibold text-cyan-400">
+                RTP 96%
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Crash</h3>
+              <p class="text-xs text-slate-400 mt-1">Acompanhe o multiplicador exponencial e retire antes da interrupção.</p>
+            </div>
+            <div class="pt-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 group-hover:text-cyan-300 transition-colors">
+                <span>Jogar Agora</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- 2. Mines -->
+          <div onclick="App.openGame('mines')" class="game-card p-5 cursor-pointer group flex flex-col justify-between gap-5">
+            <div class="flex items-start justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="16 4 26 12 16 28 6 12 16 4" stroke="#38bdf8"/>
+                  <polyline points="6 12 16 15 26 12" stroke="#2563eb"/>
+                  <line x1="16" y1="4" x2="16" y2="28" stroke="#2563eb" stroke-opacity="0.6"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#060a13] border border-blue-500/20 font-mono text-xs font-semibold text-cyan-400">
+                RTP 97%
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Mines</h3>
+              <p class="text-xs text-slate-400 mt-1">Revele gemas no tabuleiro 5x5 desviando das minas ocultas.</p>
+            </div>
+            <div class="pt-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 group-hover:text-cyan-300 transition-colors">
+                <span>Jogar Agora</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- 3. Tower -->
+          <div onclick="App.openGame('tower')" class="game-card p-5 cursor-pointer group flex flex-col justify-between gap-5">
+            <div class="flex items-start justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-blue-600/15 border border-blue-400/30 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="21" width="20" height="6" rx="1.5" stroke="#2563eb"/>
+                  <rect x="8.5" y="13" width="15" height="6" rx="1.5" stroke="#3b82f6"/>
+                  <rect x="11" y="5" width="10" height="6" rx="1.5" stroke="#38bdf8"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#060a13] border border-blue-500/20 font-mono text-xs font-semibold text-cyan-400">
+                RTP 97%
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Tower</h3>
+              <p class="text-xs text-slate-400 mt-1">Escale os 8 andares da torre em três níveis de dificuldade.</p>
+            </div>
+            <div class="pt-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 group-hover:text-cyan-300 transition-colors">
+                <span>Jogar Agora</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- 4. Dice -->
+          <div onclick="App.openGame('dice')" class="game-card p-5 cursor-pointer group flex flex-col justify-between gap-5">
+            <div class="flex items-start justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="5" width="22" height="22" rx="5" stroke="#3b82f6"/>
+                  <circle cx="11.5" cy="11.5" r="1.5" fill="#38bdf8"/>
+                  <circle cx="20.5" cy="11.5" r="1.5" fill="#38bdf8"/>
+                  <circle cx="16" cy="16" r="1.5" fill="#38bdf8"/>
+                  <circle cx="11.5" cy="20.5" r="1.5" fill="#38bdf8"/>
+                  <circle cx="20.5" cy="20.5" r="1.5" fill="#38bdf8"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#060a13] border border-blue-500/20 font-mono text-xs font-semibold text-cyan-400">
+                RTP 97%
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Dice</h3>
+              <p class="text-xs text-slate-400 mt-1">Defina o alvo na barra deslizante e role acima ou abaixo.</p>
+            </div>
+            <div class="pt-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 group-hover:text-cyan-300 transition-colors">
+                <span>Jogar Agora</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- 5. Plinko -->
+          <div onclick="App.openGame('plinko')" class="game-card p-5 cursor-pointer group flex flex-col justify-between gap-5">
+            <div class="flex items-start justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none">
+                  <circle cx="16" cy="7" r="2" fill="#38bdf8"/>
+                  <circle cx="12" cy="14" r="1.8" fill="#3b82f6"/>
+                  <circle cx="20" cy="14" r="1.8" fill="#3b82f6"/>
+                  <circle cx="8" cy="21" r="1.8" fill="#2563eb"/>
+                  <circle cx="16" cy="21" r="1.8" fill="#38bdf8"/>
+                  <circle cx="24" cy="21" r="1.8" fill="#2563eb"/>
+                  <rect x="6" y="25" width="20" height="3" rx="1.5" fill="#1e3a8a"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#060a13] border border-blue-500/20 font-mono text-xs font-semibold text-cyan-400">
+                RTP 97%
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Plinko</h3>
+              <p class="text-xs text-slate-400 mt-1">Lance esferas pela pirâmide de pinos até as bases multiplicadoras.</p>
+            </div>
+            <div class="pt-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 group-hover:text-cyan-300 transition-colors">
+                <span>Jogar Agora</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- 6. Double -->
+          <div onclick="App.openGame('double')" class="game-card p-5 cursor-pointer group flex flex-col justify-between gap-5">
+            <div class="flex items-start justify-between">
+              <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="10" width="6" height="12" rx="1.5" stroke="#ef4444"/>
+                  <rect x="13" y="8" width="6" height="16" rx="1.5" stroke="#f8fafc"/>
+                  <rect x="22" y="10" width="6" height="12" rx="1.5" stroke="#64748b"/>
+                  <line x1="16" y1="4" x2="16" y2="7" stroke="#38bdf8"/>
+                </svg>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#060a13] border border-blue-500/20 font-mono text-xs font-semibold text-cyan-400">
+                2x / 14x
+              </span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Double</h3>
+              <p class="text-xs text-slate-400 mt-1">Roleta de 15 casas com Vermelho 2x, Preto 2x e Branco 14x.</p>
+            </div>
+            <div class="pt-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 group-hover:text-cyan-300 transition-colors">
+                <span>Jogar Agora</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Bets Feed Table -->
+      <div class="aether-panel p-5 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h3 class="text-base font-bold text-white">Apostas Recentes</h3>
+          </div>
+          <span class="text-xs text-slate-500">Feed ao vivo</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-blue-500/15 text-[11px] uppercase tracking-wider text-slate-500">
+                <th class="py-2.5 px-3 font-semibold">Jogo</th>
+                <th class="py-2.5 px-3 font-semibold">Jogador</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Aposta</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Multiplicador</th>
+                <th class="py-2.5 px-3 font-semibold text-right">Pagamento</th>
+              </tr>
+            </thead>
+            <tbody id="recentBetsBody" class="divide-y divide-blue-500/10 text-sm">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 2: JOGOS (GAME ARENA) ==================== -->
+    <section id="view-game" class="hidden view-enter space-y-4">
+      <!-- Top Switcher Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <button onclick="App.navigateTo('home')" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0d1424] border border-blue-500/20 hover:border-blue-500/50 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Início</span>
+        </button>
+
+        <div class="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
+          <button onclick="App.openGame('crash')" data-gamepill="crash" class="game-pill px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">Crash</button>
+          <button onclick="App.openGame('mines')" data-gamepill="mines" class="game-pill px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">Mines</button>
+          <button onclick="App.openGame('tower')" data-gamepill="tower" class="game-pill px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">Tower</button>
+          <button onclick="App.openGame('dice')" data-gamepill="dice" class="game-pill px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">Dice</button>
+          <button onclick="App.openGame('plinko')" data-gamepill="plinko" class="game-pill px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">Plinko</button>
+          <button onclick="App.openGame('double')" data-gamepill="double" class="game-pill px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">Double</button>
+        </div>
+      </div>
+
+      <!-- 2-Column Game Container -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <!-- Left Control Panel -->
+        <div class="lg:col-span-4 aether-panel p-5 flex flex-col justify-between gap-5 order-2 lg:order-1">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between border-b border-blue-500/15 pb-3">
+              <h2 id="activeGameTitle" class="text-lg font-extrabold text-white tracking-tight">Crash</h2>
+              <span class="px-2.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 font-mono text-[11px] font-semibold text-cyan-300">Aether Original</span>
+            </div>
+
+            <!-- Standard Bet Input -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <label for="betAmountInput" class="font-semibold uppercase tracking-wider text-slate-400">Valor da Aposta</label>
+                <span id="betBalanceHint" class="font-mono text-slate-500"></span>
+              </div>
+              <div class="flex items-center gap-1.5 bg-[#060a13] border border-blue-500/20 focus-within:border-blue-500 rounded-xl p-1.5">
+                <span class="pl-2.5 font-mono text-sm font-bold text-slate-500">R$</span>
+                <input id="betAmountInput" type="number" min="1" step="1" value="10" oninput="App.onBetInputChange()" class="w-full bg-transparent px-1.5 py-1.5 font-mono text-base font-bold text-white focus:outline-none tabular-nums" />
+                <button type="button" onclick="App.adjustBet(0.5)" class="px-2.5 py-1.5 rounded-lg bg-[#131d33] hover:bg-blue-600/25 font-mono text-xs font-bold text-slate-300 transition-colors">1/2</button>
+                <button type="button" onclick="App.adjustBet(2)" class="px-2.5 py-1.5 rounded-lg bg-[#131d33] hover:bg-blue-600/25 font-mono text-xs font-bold text-slate-300 transition-colors">2x</button>
+                <button type="button" onclick="App.setMaxBet()" class="px-2.5 py-1.5 rounded-lg bg-[#131d33] hover:bg-blue-600/25 font-mono text-xs font-bold text-cyan-400 transition-colors">Máx</button>
+              </div>
+            </div>
+
+            <!-- Game-Specific Controls -->
+            <div id="gameSpecificControls" class="space-y-4"></div>
+          </div>
+
+          <!-- Primary Action Button -->
+          <div id="gameActionArea" class="pt-2"></div>
+        </div>
+
+        <!-- Right Interactive Stage -->
+        <div class="lg:col-span-8 aether-panel p-4 sm:p-6 min-h-[390px] sm:min-h-[480px] flex flex-col justify-between relative overflow-hidden order-1 lg:order-2">
+
+          <!-- STAGE 1: CRASH -->
+          <div id="stage-crash" class="hidden flex-1 flex flex-col justify-between gap-3">
+            <div id="crashHistoryBar" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
+            <div id="crashCanvasWrap" class="relative flex-1 w-full min-h-[300px] sm:min-h-[370px] rounded-xl bg-[#060a13] border border-blue-500/15 overflow-hidden">
+              <canvas id="crashCanvas" class="w-full h-full block"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+                <div id="crashMultiplierText" class="font-mono text-5xl sm:text-7xl font-extrabold text-white tracking-tight tabular-nums">
+                  1.00x
+                </div>
+                <div id="crashStatusSubtext" class="mt-2 px-3.5 py-1 rounded-full bg-[#0d1424]/90 border border-blue-500/20 text-xs font-semibold text-slate-400">
+                  Aguardando rodada
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STAGE 2: MINES -->
+          <div id="stage-mines" class="hidden flex-1 flex flex-col items-center justify-center gap-4">
+            <div class="w-full max-w-md flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/15">
+              <div>
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 block">Multiplicador Atual</span>
+                <span id="minesCurrentMult" class="font-mono text-lg font-bold text-cyan-400 tabular-nums">1.00x</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 block">Retorno Atual</span>
+                <span id="minesPotentialWin" class="font-mono text-lg font-bold text-emerald-400 tabular-nums">R$ 0,00</span>
+              </div>
+            </div>
+
+            <div id="minesBoard" class="w-full max-w-md grid grid-cols-5 gap-2 sm:gap-2.5"></div>
+          </div>
+
+          <!-- STAGE 3: TOWER (8 Floors, 3 Difficulties) -->
+          <div id="stage-tower" class="hidden flex-1 flex flex-col items-center justify-center gap-4">
+            <div class="w-full max-w-md flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/15">
+              <div>
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 block">Andar Alcançado</span>
+                <span id="towerFloorLabel" class="font-mono text-base font-bold text-white">0 / 8</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 block">Retorno Atual</span>
+                <span id="towerPotentialWin" class="font-mono text-lg font-bold text-emerald-400 tabular-nums">R$ 0,00</span>
+              </div>
+            </div>
+
+            <div id="towerGrid" class="w-full max-w-md flex flex-col gap-1.5"></div>
+          </div>
+
+          <!-- STAGE 4: DICE (NO Win Percentage Displayed) -->
+          <div id="stage-dice" class="hidden flex-1 flex flex-col justify-between gap-6">
+            <div id="diceHistoryBar" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
+
+            <div class="flex-1 flex flex-col items-center justify-center gap-8 px-2 sm:px-6">
+              <div class="text-center">
+                <span class="text-xs uppercase tracking-widest text-slate-500 font-semibold">Número Sorteado</span>
+                <div id="diceResultNumber" class="font-mono text-5xl sm:text-6xl font-extrabold text-white mt-1 tabular-nums">
+                  50.00
+                </div>
+              </div>
+
+              <div class="w-full max-w-xl space-y-3">
+                <div class="relative h-8 flex items-end">
+                  <div id="dicePin" style="left: 50%;" class="absolute -translate-x-1/2 bottom-0 transition-all duration-300 ease-out flex flex-col items-center">
+                    <span id="dicePinLabel" class="px-2 py-0.5 rounded bg-[#131d33] border border-blue-500/40 font-mono text-xs font-bold text-cyan-300 shadow">50.00</span>
+                    <div class="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-blue-400"></div>
+                  </div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-[#060a13] border border-blue-500/15">
+                  <input id="diceRangeSlider" type="range" min="2" max="98" step="1" value="50" oninput="DiceGame.onSliderChange(this.value)" class="aether-slider" />
+                  <div class="flex justify-between font-mono text-[11px] text-slate-500 mt-2 px-1">
+                    <span>0</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Only Multiplier, Target Number, and Potential Payout -->
+            <div class="grid grid-cols-3 gap-3 bg-[#060a13] border border-blue-500/15 rounded-xl p-3.5">
+              <div>
+                <span class="text-[11px] text-slate-500 block">Multiplicador</span>
+                <span id="diceBottomMult" class="font-mono text-sm sm:text-base font-bold text-cyan-400">1.94x</span>
+              </div>
+              <div>
+                <span id="diceBottomModeLabel" class="text-[11px] text-slate-500 block">Rolar Acima</span>
+                <span id="diceBottomTarget" class="font-mono text-sm sm:text-base font-bold text-white">50.00</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[11px] text-slate-500 block">Pagamento</span>
+                <span id="diceBottomPayout" class="font-mono text-sm sm:text-base font-bold text-emerald-400 tabular-nums">R$ 19,40</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- STAGE 5: PLINKO -->
+          <div id="stage-plinko" class="hidden flex-1 flex flex-col items-center justify-center">
+            <div id="plinkoCanvasWrap" class="w-full h-full min-h-[350px] sm:min-h-[420px] rounded-xl bg-[#060a13] border border-blue-500/15 relative overflow-hidden">
+              <canvas id="plinkoCanvas" class="w-full h-full block"></canvas>
+            </div>
+          </div>
+
+          <!-- STAGE 6: DOUBLE (Vermelho 2x, Branco 14x, Preto 2x) -->
+          <div id="stage-double" class="hidden flex-1 flex flex-col justify-between gap-5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Últimos Giros</span>
+              <div id="doubleHistoryBar" class="flex items-center gap-1.5 overflow-x-auto"></div>
+            </div>
+
+            <!-- Roulette Track Window -->
+            <div class="relative w-full h-36 sm:h-44 rounded-2xl bg-[#060a13] border border-blue-500/15 overflow-hidden flex items-center">
+              <div class="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-1 bg-cyan-400 z-20 shadow-[0_0_15px_#38bdf8]"></div>
+              <div class="absolute left-1/2 top-0 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-cyan-400 z-20"></div>
+              <div class="absolute left-1/2 bottom-0 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[10px] border-b-cyan-400 z-20"></div>
+
+              <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#060a13] to-transparent z-10 pointer-events-none"></div>
+              <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#060a13] to-transparent z-10 pointer-events-none"></div>
+
+              <div id="doubleTrack" class="flex items-center gap-2.5 will-change-transform" style="transform: translateX(0px);"></div>
+            </div>
+
+            <!-- Status / Last Result Bar -->
+            <div id="doubleStatusBar" class="text-center py-2.5 px-4 rounded-xl bg-[#060a13] border border-blue-500/15 text-xs font-semibold text-slate-400">
+              Escolha uma cor no painel ao lado e gire a roleta
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 3: CARTEIRA (PROTECTED) ==================== -->
+    <section id="view-wallet" class="hidden view-enter max-w-4xl mx-auto space-y-6">
+      <div class="aether-panel p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Saldo Disponível</span>
+          <div id="walletBalanceDisplay" class="text-3xl sm:text-4xl font-mono font-bold text-white mt-1 tabular-nums">R$ 0,00</div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="App.switchWalletTab('deposit')" id="walletTabBtn-deposit" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white transition-colors">
+            Depositar
+          </button>
+          <button onclick="App.switchWalletTab('withdraw')" id="walletTabBtn-withdraw" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-[#131d33] text-slate-300 hover:text-white border border-blue-500/20 transition-colors">
+            Sacar
+          </button>
+          <button onclick="App.switchWalletTab('history')" id="walletTabBtn-history" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-[#131d33] text-slate-300 hover:text-white border border-blue-500/20 transition-colors">
+            Histórico Financeiro
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 1: DEPOSITAR (PIX SIMULADO) -->
+      <div id="walletTab-deposit" class="aether-panel p-6 space-y-6">
+        <div class="flex items-center justify-between border-b border-blue-500/15 pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Depósito via PIX Simulado</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Adicione saldo virtual instantaneamente à sua conta</p>
+          </div>
+          <span class="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold tracking-wide">PIX</span>
+        </div>
+
+        <div id="pixFormContainer" class="space-y-5">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">Valores Rápidos</label>
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+              <button type="button" onclick="App.setDepositAmount(25)" class="py-2.5 rounded-xl bg-[#131d33] hover:bg-blue-600/20 border border-blue-500/20 hover:border-blue-500 font-mono text-sm font-semibold text-slate-200 transition-colors">R$ 25</button>
+              <button type="button" onclick="App.setDepositAmount(50)" class="py-2.5 rounded-xl bg-[#131d33] hover:bg-blue-600/20 border border-blue-500/20 hover:border-blue-500 font-mono text-sm font-semibold text-slate-200 transition-colors">R$ 50</button>
+              <button type="button" onclick="App.setDepositAmount(100)" class="py-2.5 rounded-xl bg-[#131d33] hover:bg-blue-600/20 border border-blue-500/20 hover:border-blue-500 font-mono text-sm font-semibold text-slate-200 transition-colors">R$ 100</button>
+              <button type="button" onclick="App.setDepositAmount(250)" class="py-2.5 rounded-xl bg-[#131d33] hover:bg-blue-600/20 border border-blue-500/20 hover:border-blue-500 font-mono text-sm font-semibold text-slate-200 transition-colors">R$ 250</button>
+              <button type="button" onclick="App.setDepositAmount(500)" class="py-2.5 rounded-xl bg-[#131d33] hover:bg-blue-600/20 border border-blue-500/20 hover:border-blue-500 font-mono text-sm font-semibold text-slate-200 transition-colors">R$ 500</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="depositAmountInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Valor Personalizado (R$)</label>
+              <input id="depositAmountInput" type="number" min="5" max="50000" step="1" value="100" class="w-full px-4 py-3 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none font-mono text-base font-bold text-white" />
+            </div>
+
+            <div>
+              <label for="depositPromoInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Código Promocional (Opcional)</label>
+              <input id="depositPromoInput" type="text" placeholder="Ex: AZUL100" class="w-full px-4 py-3 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm uppercase text-white placeholder-slate-600" />
+              <p class="text-[11px] text-cyan-400 mt-1">Cupom <span class="font-mono font-bold">AZUL100</span> adiciona 100% de bônus.</p>
+            </div>
+          </div>
+
+          <button type="button" onclick="App.generatePixCharge()" class="btn-primary w-full py-3.5 rounded-xl font-bold text-sm tracking-wide">
+            Gerar QR Code PIX
+          </button>
+        </div>
+
+        <!-- Generated PIX QR Code & Copia e Cola -->
+        <div id="pixCheckoutBox" class="hidden pt-2 space-y-5">
+          <div class="aether-subpanel p-5 flex flex-col md:flex-row items-center gap-6">
+            <div class="bg-white p-3.5 rounded-2xl shrink-0 shadow-lg">
+              <svg id="pixQrSvg" class="w-36 h-36 text-[#060a13]" viewBox="0 0 29 29" fill="currentColor"></svg>
+            </div>
+
+            <div class="flex-1 w-full space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total a Creditar</span>
+                <span id="pixTotalCreditLabel" class="font-mono text-xl font-bold text-emerald-400">R$ 100,00</span>
+              </div>
+
+              <div>
+                <label class="block text-xs text-slate-400 mb-1.5">PIX Copia e Cola</label>
+                <div class="flex items-center gap-2">
+                  <input id="pixCopyCodeInput" type="text" readonly class="w-full px-3 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 font-mono text-xs text-slate-300 focus:outline-none" />
+                  <button type="button" onclick="App.copyPixCode()" class="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white shrink-0 transition-colors">
+                    Copiar
+                  </button>
+                </div>
+              </div>
+
+              <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
+                <button id="confirmPixBtn" type="button" onclick="App.confirmPixDeposit()" class="btn-cashout flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Confirmar Depósito</span>
+                </button>
+                <button type="button" onclick="App.resetPixForm()" class="px-4 py-3 rounded-xl bg-[#060a13] border border-blue-500/20 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                  Voltar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: SACAR (PIX SIMULADO) -->
+      <div id="walletTab-withdraw" class="hidden aether-panel p-6 space-y-5">
+        <div class="border-b border-blue-500/15 pb-4">
+          <h2 class="text-lg font-bold text-white">Saque via PIX Simulado</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Valor mínimo de R$ 10,00</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="withdrawKeyType" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Tipo de Chave</label>
+            <select id="withdrawKeyType" class="w-full px-4 py-3 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white">
+              <option value="CPF">CPF</option>
+              <option value="E-mail">E-mail</option>
+              <option value="Telefone">Telefone</option>
+              <option value="Chave Aleatória">Chave Aleatória</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="withdrawKeyInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Chave PIX</label>
+            <input id="withdrawKeyInput" type="text" placeholder="Informe sua chave PIX" class="w-full px-4 py-3 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+          </div>
+        </div>
+
+        <div>
+          <label for="withdrawAmountInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Valor do Saque (R$)</label>
+          <div class="flex items-center gap-2">
+            <input id="withdrawAmountInput" type="number" min="10" step="1" placeholder="10,00" class="w-full px-4 py-3 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none font-mono text-base font-bold text-white" />
+            <button type="button" onclick="App.setMaxWithdraw()" class="px-4 py-3 rounded-xl bg-[#131d33] border border-blue-500/25 hover:border-blue-500 text-xs font-bold uppercase text-cyan-400 transition-colors">
+              Máx
+            </button>
+          </div>
+        </div>
+
+        <button type="button" onclick="App.processWithdraw()" class="btn-primary w-full py-3.5 rounded-xl font-bold text-sm">
+          Solicitar Saque
+        </button>
+      </div>
+
+      <!-- TAB 3: HISTÓRICO FINANCEIRO -->
+      <div id="walletTab-history" class="hidden aether-panel p-6 space-y-4">
+        <div class="border-b border-blue-500/15 pb-4 flex items-center justify-between">
+          <h2 class="text-lg font-bold text-white">Histórico Financeiro</h2>
+          <span id="txCountBadge" class="text-xs text-slate-400">0 registros</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-blue-500/15 text-[11px] uppercase tracking-wider text-slate-500">
+                <th class="py-2.5 px-3">Operação</th>
+                <th class="py-2.5 px-3">Detalhe</th>
+                <th class="py-2.5 px-3">Data / Hora</th>
+                <th class="py-2.5 px-3 text-right">Valor</th>
+                <th class="py-2.5 px-3 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody id="txHistoryBody" class="divide-y divide-blue-500/10 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 4: MINHA CONTA (PROTECTED) ==================== -->
+    <section id="view-account" class="hidden view-enter max-w-4xl mx-auto space-y-6">
+      <!-- Profile Summary Card -->
+      <div class="aether-panel p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div id="profileAvatarLarge" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-extrabold text-xl flex items-center justify-center shadow-lg shadow-blue-600/25 shrink-0">
+            AE
+          </div>
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 id="profileNameDisplay" class="text-xl font-bold text-white">Usuário</h2>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">Conta Verificada</span>
+            </div>
+            <p id="profileEmailDisplay" class="text-sm text-slate-400">usuario@email.com</p>
+            <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-mono pt-0.5">
+              <span id="profileCpfDisplay">CPF: ***.000.000-**</span>
+              <span id="profileCreatedDisplay">Membro desde: --/--/----</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="App.logout()" class="self-start sm:self-center px-4 py-2.5 rounded-xl bg-[#131d33] border border-blue-500/25 hover:border-red-500/50 text-sm font-semibold text-slate-300 hover:text-red-400 transition-colors">
+          Sair da Conta
+        </button>
+      </div>
+
+      <!-- 4 Clean KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="aether-panel p-5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Apostado</span>
+          <div id="statTotalWagered" class="font-mono text-xl sm:text-2xl font-bold text-white mt-2 tabular-nums">R$ 0,00</div>
+        </div>
+        <div class="aether-panel p-5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Ganho</span>
+          <div id="statTotalWon" class="font-mono text-xl sm:text-2xl font-bold text-emerald-400 mt-2 tabular-nums">R$ 0,00</div>
+        </div>
+        <div class="aether-panel p-5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lucro / Prejuízo Líquido</span>
+          <div id="statNetProfit" class="font-mono text-xl sm:text-2xl font-bold text-slate-200 mt-2 tabular-nums">R$ 0,00</div>
+        </div>
+        <div class="aether-panel p-5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Maior Multiplicador</span>
+          <div id="statMaxMult" class="font-mono text-xl sm:text-2xl font-bold text-cyan-400 mt-2 tabular-nums">0.00x</div>
+        </div>
+      </div>
+
+      <!-- Security / Change Password & Reset Simulated Balance -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Change Password -->
+        <form onsubmit="App.handleChangePassword(event)" class="aether-panel p-6 space-y-4">
+          <h3 class="text-base font-bold text-white border-b border-blue-500/15 pb-3">Segurança / Alterar Senha</h3>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Senha Atual</label>
+            <input id="currentPwdInput" type="password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nova Senha (mín. 6 caracteres)</label>
+            <input id="newPwdInput" type="password" required minlength="6" placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white" />
+          </div>
+          <button type="submit" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">
+            Atualizar Senha
+          </button>
+        </form>
+
+        <!-- Reset Simulated Balance -->
+        <div class="aether-panel p-6 flex flex-col justify-between gap-4">
+          <div class="space-y-2">
+            <h3 class="text-base font-bold text-white border-b border-blue-500/15 pb-3">Resetar Saldo Simulado</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Restaura o saldo virtual da sua conta para R$ 100,00 caso queira recomeçar seus testes nos jogos da plataforma.
+            </p>
+          </div>
+          <div id="resetBalanceArea">
+            <button type="button" onclick="App.promptResetBalance()" class="w-full py-2.5 px-4 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 text-sm font-semibold transition-colors">
+              Resetar Saldo Simulado
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="border-t border-blue-500/15 py-6 px-4 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <span class="font-bold text-slate-400">AETHER BET</span>
+      <span>Simulador Virtual — Ambiente sem dinheiro real. Destinado exclusivamente para entretenimento.</span>
+    </div>
+  </footer>
+
+  <!-- ==================== AUTHENTICATION MODAL (CADASTRO & LOGIN) ==================== -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="aether-panel w-full max-w-md p-6 sm:p-7 relative shadow-2xl shadow-blue-950/60 view-enter my-auto">
+      <button onclick="App.closeAuthModal()" aria-label="Fechar" class="absolute right-4 top-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#131d33] transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <!-- Brand -->
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon></svg>
+        </div>
+        <span class="font-extrabold text-base text-white">AETHER BET</span>
+      </div>
+
+      <!-- Contextual Banner for Visitors -->
+      <div id="authBannerBox" class="hidden mb-4 px-3.5 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-start gap-2.5 text-xs text-cyan-200">
+        <svg class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="authBannerText">Crie sua conta gratuita ou faça login para começar a apostar.</span>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#060a13] border border-blue-500/20 mb-5">
+        <button id="authTabRegister" type="button" onclick="App.setAuthMode('register')" class="py-2 rounded-lg text-sm font-semibold transition-colors bg-blue-600 text-white">Criar Conta</button>
+        <button id="authTabLogin" type="button" onclick="App.setAuthMode('login')" class="py-2 rounded-lg text-sm font-semibold transition-colors text-slate-400 hover:text-white">Entrar</button>
+      </div>
+
+      <!-- TAB 1: CRIAR CONTA (CADASTRO) -->
+      <form id="registerForm" onsubmit="App.handleRegister(event)" novalidate class="space-y-3.5">
+        <div>
+          <label for="regName" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Nome Completo</label>
+          <input id="regName" type="text" placeholder="Ex: Lucas Andrade" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+          <p id="errRegName" class="hidden text-[11px] text-red-400 mt-1"></p>
+        </div>
+
+        <div>
+          <label for="regEmail" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">E-mail</label>
+          <input id="regEmail" type="email" placeholder="seu@email.com" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+          <p id="errRegEmail" class="hidden text-[11px] text-red-400 mt-1"></p>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="regCpf" class="text-xs font-semibold uppercase tracking-wider text-slate-400">CPF</label>
+            <button type="button" onclick="App.fillValidSampleCpf()" class="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">Gerar CPF válido</button>
+          </div>
+          <input id="regCpf" type="text" maxlength="14" oninput="App.formatCpfInput(this)" placeholder="000.000.000-00" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none font-mono text-sm text-white placeholder-slate-600" />
+          <p id="errRegCpf" class="hidden text-[11px] text-red-400 mt-1"></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="regPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Senha</label>
+            <input id="regPassword" type="password" placeholder="Mín. 6 caracteres" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+            <p id="errRegPassword" class="hidden text-[11px] text-red-400 mt-1"></p>
+          </div>
+
+          <div>
+            <label for="regConfirmPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Confirmar Senha</label>
+            <input id="regConfirmPassword" type="password" placeholder="Repita a senha" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+            <p id="errRegConfirm" class="hidden text-[11px] text-red-400 mt-1"></p>
+          </div>
+        </div>
+
+        <label class="flex items-start gap-2.5 p-3 rounded-xl bg-[#131d33]/80 border border-blue-500/20 cursor-pointer select-none">
+          <input id="regWelcomeBonus" type="checkbox" checked class="mt-0.5 w-4 h-4 rounded accent-blue-600 cursor-pointer" />
+          <span class="text-xs text-slate-200 leading-snug">
+            Ativar Bônus de Boas-Vindas Simulado (<strong class="text-emerald-400 font-mono">R$ 100,00</strong> grátis para testar)
+          </span>
+        </label>
+
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl font-bold text-sm">
+          Finalizar Cadastro e Entrar
+        </button>
+      </form>
+
+      <!-- TAB 2: ENTRAR (LOGIN) -->
+      <form id="loginForm" onsubmit="App.handleLogin(event)" novalidate class="hidden space-y-4">
+        <div id="errLoginGeneral" class="hidden px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300"></div>
+
+        <div>
+          <label for="loginEmail" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">E-mail</label>
+          <input id="loginEmail" type="email" required placeholder="seu@email.com" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+        </div>
+
+        <div>
+          <label for="loginPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Senha</label>
+          <input id="loginPassword" type="password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-[#060a13] border border-blue-500/20 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-600" />
+        </div>
+
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl font-bold text-sm">
+          Entrar na Conta
+        </button>
+
+        <div class="pt-1 flex flex-col gap-2.5">
+          <button type="button" onclick="App.loginDemoAccount()" class="w-full py-2.5 rounded-xl bg-[#131d33] hover:bg-blue-600/20 border border-blue-500/25 text-xs font-semibold text-cyan-300 transition-colors">
+            Acesso Rápido (Conta Demo)
+          </button>
+
+          <p class="text-center text-xs text-slate-400">
+            Ainda não possui cadastro?
+            <button type="button" onclick="App.setAuthMode('register')" class="text-blue-400 hover:text-cyan-300 font-semibold underline">
+              Criar conta agora
+            </button>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
